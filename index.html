@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Smart Light Switch</title>
+  <style>
+    body {
+      background-color: #fafafa;
+      font-family: 'Arial', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      color: #333;
+    }
+
+    .container {
+      text-align: center;
+      padding: 20px;
+      background: #ffffff;
+      border-radius: 15px;
+      box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+      color: #333;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .switch-plate {
+      width: 120px;
+      height: 220px;
+      background: #e0e0e0;
+      border-radius: 12px;
+      border: 2px solid #ccc;
+      box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .switch-toggle {
+      width: 60px;
+      height: 100px;
+      background: #fff;
+      border-radius: 10px;
+      border: 2px solid #888;
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s ease;
+    }
+
+    .switch-toggle::before {
+      content: '';
+      position: absolute;
+      top: -15px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 6px;
+      height: 20px;
+      background-color: #777;
+      border-radius: 3px;
+    }
+
+    .switch-toggle.on {
+      top: 80px;
+      background: linear-gradient(to top, #66b3ff, #3399ff);
+      transform: translateX(-50%) rotateX(20deg);
+    }
+
+    .switch-label {
+      position: absolute;
+      bottom: 10px;
+      font-weight: bold;
+      font-size: 1.2rem;
+      color: #555;
+    }
+
+    .main-data-box {
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .button {
+      padding: 12px 20px;
+      background: #3399ff;
+      border: none;
+      color: white;
+      font-size: 1.1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+      margin-top: 20px;
+    }
+
+    .button:hover {
+      background: #0077cc;
+    }
+
+    .history-container {
+      margin-top: 20px;
+      display: none;
+      background: #f1f1f1;
+      padding: 15px;
+      border-radius: 8px;
+    }
+
+    .history-item {
+      padding: 10px;
+      margin-bottom: 10px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .timestamp {
+      font-size: 0.8rem;
+      color: #888;
+    }
+
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>⚡ Smart Light Switch</h1>
+
+  <div class="switch-plate">
+    <div class="switch-toggle {% if reading.relay == 1 %}on{% endif %}" id="lightSwitch" onclick="toggleSwitch()"></div>
+    <div class="switch-label" id="status">{{ 'ON' if reading.relay == 1 else 'OFF' }}</div>
+  </div>
+
+  <div class="main-data-box">
+    <h2>🔌 Voltage: <b>{{ reading.voltage }}</b> V</h2>
+    <h2>⚡ Energy: <b>{{ reading.energy }}</b> kWh</h2>
+    <h2>💰 Bill: <b>₹{{ reading.bill }}</b></h2>
+  
+  </div>
+
+  <!-- Button to Show History -->
+  <button class="button" onclick="toggleHistory()">📜 Show History</button>
+
+  <!-- History Section -->
+  <div id="history" class="history-container">
+    <h2>📜 Last 5 Entries</h2>
+    {% if history %}
+      {% for entry in history %}
+        <div class="history-item">
+          <p>🔌 Voltage: {{ entry.voltage }} V</p>
+          <p>⚡ Energy: {{ entry.energy }} kWh</p>
+          <p>💰 Bill: ₹{{ entry.bill }}</p>
+         
+        </div>
+      {% endfor %}
+    {% else %}
+      <p>No history available</p>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  let isOn = {{ 1 if reading.relay == 1 else 0 }};
+
+  function toggleSwitch() {
+    const switchEl = document.getElementById('lightSwitch');
+    const status = document.getElementById('status');
+
+    isOn = !isOn;
+    switchEl.classList.toggle('on', isOn);
+    status.textContent = isOn ? 'ON' : 'OFF';
+
+    fetch('/update_relay', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ state: isOn ? 1 : 0 }),
+    })
+    .then(response => response.json())
+    .then(data => {
+      console.log('Relay state updated:', data);
+    })
+    .catch(error => {
+      console.error('Error updating relay state:', error);
+    });
+  }
+
+  function toggleHistory() {
+    var historySection = document.getElementById("history");
+    historySection.style.display = (historySection.style.display === "none" || historySection.style.display === "") ? "block" : "none";
+  }
+</script>
+
+</body>
+</html>
